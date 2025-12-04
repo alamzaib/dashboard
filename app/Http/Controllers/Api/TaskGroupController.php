@@ -11,8 +11,12 @@ class TaskGroupController extends Controller
 {
     public function index()
     {
-        $taskGroups = TaskGroup::with('creator')->get();
-        return response()->json($taskGroups);
+        try {
+            $taskGroups = TaskGroup::with('creator')->get();
+            return response()->json($taskGroups);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)

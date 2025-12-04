@@ -4,9 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Task extends Model
+class Workorder extends Model
 {
     protected $fillable = [
+        'workorder_number',
         'title',
         'description',
         'status',

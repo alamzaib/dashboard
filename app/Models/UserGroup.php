@@ -9,6 +9,8 @@ class UserGroup extends Model
     protected $fillable = [
         'name',
         'description',
+        'header_color',
+        'logo_path',
     ];
 
     /**

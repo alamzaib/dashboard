@@ -80,4 +80,9 @@ class User extends Authenticatable
         return $this->belongsToMany(PermissionGroup::class, 'user_permission_group')
             ->with('project', 'permissions');
     }
+
+    public function taskGroups()
+    {
+        return $this->belongsToMany(TaskGroup::class, 'task_group_user');
+    }
 }

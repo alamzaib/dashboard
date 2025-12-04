@@ -11,8 +11,12 @@ class TaskController extends Controller
 {
     public function index()
     {
-        $tasks = Task::with(['assignedUser', 'creator', 'taskGroup', 'workflow'])->get();
-        return response()->json($tasks);
+        try {
+            $tasks = Task::with(['assignedUserGroup', 'creator', 'taskGroup', 'workflow'])->get();
+            return response()->json($tasks);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)
@@ -23,7 +27,7 @@ class TaskController extends Controller
             'status' => 'nullable|in:pending,in_progress,completed,cancelled',
             'priority' => 'nullable|in:low,medium,high,urgent',
             'due_date' => 'nullable|date',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_to_user_group_id' => 'nullable|exists:user_groups,id',
             'task_group_id' => 'nullable|exists:task_groups,id',
             'workflow_id' => 'nullable|exists:workflows,id',
             'is_active' => 'nullable|boolean',
@@ -32,12 +36,12 @@ class TaskController extends Controller
         $validated['created_by'] = Auth::id();
         $task = Task::create($validated);
 
-        return response()->json($task->load(['assignedUser', 'creator', 'taskGroup', 'workflow']), 201);
+        return response()->json($task->load(['assignedUserGroup', 'creator', 'taskGroup', 'workflow']), 201);
     }
 
     public function show(string $id)
     {
-        $task = Task::with(['assignedUser', 'creator', 'taskGroup', 'workflow'])->findOrFail($id);
+        $task = Task::with(['assignedUserGroup', 'creator', 'taskGroup', 'workflow'])->findOrFail($id);
         return response()->json($task);
     }
 
@@ -51,7 +55,7 @@ class TaskController extends Controller
             'status' => 'nullable|in:pending,in_progress,completed,cancelled',
             'priority' => 'nullable|in:low,medium,high,urgent',
             'due_date' => 'nullable|date',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_to_user_group_id' => 'nullable|exists:user_groups,id',
             'task_group_id' => 'nullable|exists:task_groups,id',
             'workflow_id' => 'nullable|exists:workflows,id',
             'is_active' => 'nullable|boolean',
@@ -59,7 +63,7 @@ class TaskController extends Controller
 
         $task->update($validated);
 
-        return response()->json($task->load(['assignedUser', 'creator', 'taskGroup', 'workflow']));
+        return response()->json($task->load(['assignedUserGroup', 'creator', 'taskGroup', 'workflow']));
     }
 
     public function destroy(string $id)

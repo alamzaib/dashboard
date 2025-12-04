@@ -11,8 +11,12 @@ class WorkflowController extends Controller
 {
     public function index()
     {
-        $workflows = Workflow::with('creator')->get();
-        return response()->json($workflows);
+        try {
+            $workflows = Workflow::with('creator')->get();
+            return response()->json($workflows);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)
@@ -21,6 +25,10 @@ class WorkflowController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'steps' => 'nullable|array',
+            'steps.*.name' => 'nullable|string|max:100',
+            'steps.*.description' => 'nullable|string|max:100',
+            'steps.*.item_type' => 'nullable|in:text,date,file,boolean',
+            'steps.*.visibility' => 'nullable|in:show,hide',
             'status' => 'nullable|in:draft,active,inactive',
             'is_active' => 'nullable|boolean',
         ]);
@@ -45,6 +53,10 @@ class WorkflowController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'steps' => 'nullable|array',
+            'steps.*.name' => 'nullable|string|max:100',
+            'steps.*.description' => 'nullable|string|max:100',
+            'steps.*.item_type' => 'nullable|in:text,date,file,boolean',
+            'steps.*.visibility' => 'nullable|in:show,hide',
             'status' => 'nullable|in:draft,active,inactive',
             'is_active' => 'nullable|boolean',
         ]);

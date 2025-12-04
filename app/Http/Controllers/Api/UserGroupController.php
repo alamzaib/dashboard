@@ -25,7 +25,15 @@ class UserGroupController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:user_groups,name',
             'description' => 'nullable|string',
+            'header_color' => 'nullable|string|max:20',
+            'logo' => 'nullable|image|max:2048',
         ]);
+
+        // Handle logo upload if provided
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('user-group-logos', 'public');
+            $validated['logo_path'] = $path;
+        }
 
         $userGroup = UserGroup::create($validated);
 
@@ -51,7 +59,15 @@ class UserGroupController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255|unique:user_groups,name,' . $id,
             'description' => 'nullable|string',
+            'header_color' => 'nullable|string|max:20',
+            'logo' => 'nullable|image|max:2048',
         ]);
+
+        // Handle logo upload if provided
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('user-group-logos', 'public');
+            $validated['logo_path'] = $path;
+        }
 
         $userGroup->update($validated);
 

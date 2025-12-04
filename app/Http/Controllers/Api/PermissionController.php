@@ -90,6 +90,73 @@ class PermissionController extends Controller
     }
 
     /**
+     * Update a permission group with permissions.
+     */
+    public function updateGroup(Request $request, $permissionGroupId)
+    {
+        $permissionGroup = PermissionGroup::findOrFail($permissionGroupId);
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'permissions' => 'sometimes|required|array',
+            'permissions.*.id' => 'nullable|exists:permissions,id',
+            'permissions.*.name' => 'required|string|max:255',
+            'permissions.*.read' => 'nullable|boolean',
+            'permissions.*.write' => 'nullable|boolean',
+            'permissions.*.update' => 'nullable|boolean',
+            'permissions.*.delete' => 'nullable|boolean',
+        ]);
+
+        // Update permission group
+        if (isset($validated['name'])) {
+            $permissionGroup->name = $validated['name'];
+        }
+        if (isset($validated['description'])) {
+            $permissionGroup->description = $validated['description'];
+        }
+        $permissionGroup->save();
+
+        // Update permissions if provided
+        if (isset($validated['permissions'])) {
+            $existingPermissionIds = [];
+            
+            foreach ($validated['permissions'] as $permissionData) {
+                if (isset($permissionData['id'])) {
+                    // Update existing permission
+                    $permission = Permission::findOrFail($permissionData['id']);
+                    $permission->update([
+                        'name' => $permissionData['name'],
+                        'read' => $permissionData['read'] ?? false,
+                        'write' => $permissionData['write'] ?? false,
+                        'update' => $permissionData['update'] ?? false,
+                        'delete' => $permissionData['delete'] ?? false,
+                    ]);
+                    $existingPermissionIds[] = $permission->id;
+                } else {
+                    // Create new permission
+                    $permission = Permission::create([
+                        'permission_group_id' => $permissionGroup->id,
+                        'name' => $permissionData['name'],
+                        'read' => $permissionData['read'] ?? false,
+                        'write' => $permissionData['write'] ?? false,
+                        'update' => $permissionData['update'] ?? false,
+                        'delete' => $permissionData['delete'] ?? false,
+                    ]);
+                    $existingPermissionIds[] = $permission->id;
+                }
+            }
+
+            // Delete permissions that are no longer in the list
+            Permission::where('permission_group_id', $permissionGroup->id)
+                ->whereNotIn('id', $existingPermissionIds)
+                ->delete();
+        }
+
+        return response()->json($permissionGroup->load('permissions'));
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)

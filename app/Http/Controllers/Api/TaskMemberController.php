@@ -3,64 +3,99 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\TaskMember;
+use App\Models\TaskGroup;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TaskMemberController extends Controller
 {
-    public function index()
+    /**
+     * Get all task groups
+     */
+    public function getTaskGroups()
     {
-        $taskMembers = TaskMember::with('taskGroup')->get();
-        return response()->json($taskMembers);
+        try {
+            $taskGroups = TaskGroup::withCount('users')->get();
+            return response()->json($taskGroups);
+        } catch (\Exception $e) {
+            Log::error('Error fetching task groups: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch task groups.'], 500);
+        }
     }
 
-    public function store(Request $request)
+    /**
+     * Get users for a specific task group
+     */
+    public function getUsersByTaskGroup($taskGroupId)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:task_members',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'role' => 'nullable|in:member,lead,admin',
-            'task_group_id' => 'nullable|exists:task_groups,id',
-            'is_active' => 'nullable|boolean',
-        ]);
-
-        $taskMember = TaskMember::create($validated);
-
-        return response()->json($taskMember->load('taskGroup'), 201);
+        try {
+            $taskGroup = TaskGroup::with('users')->findOrFail($taskGroupId);
+            return response()->json($taskGroup->users);
+        } catch (\Exception $e) {
+            Log::error('Error fetching users for task group: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch users.'], 500);
+        }
     }
 
-    public function show(string $id)
+    /**
+     * Get all users (for the right section)
+     */
+    public function getAllUsers()
     {
-        $taskMember = TaskMember::with('taskGroup')->findOrFail($id);
-        return response()->json($taskMember);
+        try {
+            $users = User::select('id', 'name', 'email', 'reference_id')->get();
+            return response()->json($users);
+        } catch (\Exception $e) {
+            Log::error('Error fetching users: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch users.'], 500);
+        }
     }
 
-    public function update(Request $request, string $id)
+    /**
+     * Add a user to a task group
+     */
+    public function addUserToTaskGroup(Request $request, $taskGroupId)
     {
-        $taskMember = TaskMember::findOrFail($id);
+        try {
+            $validated = $request->validate([
+                'user_id' => 'required|exists:users,id',
+            ]);
 
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|string|email|max:255|unique:task_members,email,' . $id,
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'role' => 'nullable|in:member,lead,admin',
-            'task_group_id' => 'nullable|exists:task_groups,id',
-            'is_active' => 'nullable|boolean',
-        ]);
+            $taskGroup = TaskGroup::findOrFail($taskGroupId);
+            $user = User::findOrFail($validated['user_id']);
 
-        $taskMember->update($validated);
+            // Check if user is already in the group
+            if ($taskGroup->users()->where('user_id', $user->id)->exists()) {
+                return response()->json(['error' => 'User is already a member of this task group.'], 422);
+            }
 
-        return response()->json($taskMember->load('taskGroup'));
+            $taskGroup->users()->attach($user->id);
+
+            return response()->json(['message' => 'User added to task group successfully.'], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Error adding user to task group: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to add user to task group.'], 500);
+        }
     }
 
-    public function destroy(string $id)
+    /**
+     * Remove a user from a task group
+     */
+    public function removeUserFromTaskGroup($taskGroupId, $userId)
     {
-        $taskMember = TaskMember::findOrFail($id);
-        $taskMember->delete();
+        try {
+            $taskGroup = TaskGroup::findOrFail($taskGroupId);
+            $user = User::findOrFail($userId);
 
-        return response()->json(['message' => 'Task Member deleted successfully']);
+            $taskGroup->users()->detach($user->id);
+
+            return response()->json(['message' => 'User removed from task group successfully.'], 200);
+        } catch (\Exception $e) {
+            Log::error('Error removing user from task group: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to remove user from task group.'], 500);
+        }
     }
 }

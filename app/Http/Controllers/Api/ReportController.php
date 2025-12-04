@@ -11,8 +11,12 @@ class ReportController extends Controller
 {
     public function index()
     {
-        $reports = Report::with('creator')->get();
-        return response()->json($reports);
+        try {
+            $reports = Report::with('creator')->get();
+            return response()->json($reports);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)

@@ -31,4 +31,9 @@ class TaskGroup extends Model
     {
         return $this->hasMany(TaskMember::class);
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'task_group_user');
+    }
 }
