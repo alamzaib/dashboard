@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TaskGroupController;
 use App\Http\Controllers\Api\TaskMemberController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\UserGroupController;
 use App\Http\Controllers\Api\WorkflowController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,8 +28,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/menus/update-order', [MenuController::class, 'updateOrder']);
     Route::get('/menus/permission-group/{permissionGroupId}', [MenuController::class, 'getMenusByPermissionGroup']);
     Route::get('/menus/permission-group/{permissionGroupId}/user-groups', [MenuController::class, 'getUserGroupsByPermissionGroup']);
-    Route::get('/user-groups', [MenuController::class, 'userGroups']);
+    Route::get('/user-groups', [MenuController::class, 'userGroups']); // Keep for backward compatibility
     Route::apiResource('menus', MenuController::class);
+
+    // User Groups
+    Route::apiResource('user-groups', UserGroupController::class);
 
     // Projects
     Route::apiResource('projects', ProjectController::class);
