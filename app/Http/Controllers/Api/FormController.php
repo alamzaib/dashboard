@@ -239,7 +239,7 @@ class FormController extends Controller
             ]);
 
             // Get frontend URL from env or use default React dev server URL
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3001');
             $publicUrl = rtrim($frontendUrl, '/') . "/public/form/{$publicKey}";
 
             return response()->json([
